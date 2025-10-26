@@ -1,494 +1,706 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: it's alright */
-import { useEffect, useState, useRef, useCallback, use } from "react";
-import { useAgent } from "agents/react";
-import { isToolUIPart } from "ai";
-import { useAgentChat } from "agents/ai-react";
-import type { UIMessage } from "@ai-sdk/react";
-import type { tools } from "./tools";
-
-// Component imports
+import { useState } from "react";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
-import { Avatar } from "@/components/avatar/Avatar";
-import { Toggle } from "@/components/toggle/Toggle";
 import { Textarea } from "@/components/textarea/Textarea";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
-import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
-
-// Icon imports
 import {
-  Bug,
   Moon,
-  Robot,
   Sun,
-  Trash,
-  PaperPlaneTilt,
-  Stop
+  FileText,
+  Sparkle,
+  Copy,
+  Check,
+  Upload,
+  Link as LinkIcon,
+  Download
 } from "@phosphor-icons/react";
 
-// List of tools that require human confirmation
-// NOTE: this should match the tools that don't have execute functions in tools.ts
-const toolsRequiringConfirmation: (keyof typeof tools)[] = [
-  "getWeatherInformation"
-];
-
-export default function Chat() {
+export default function ResumeGenerator() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    // Check localStorage first, default to dark if not found
     const savedTheme = localStorage.getItem("theme");
     return (savedTheme as "dark" | "light") || "dark";
   });
-  const [showDebug, setShowDebug] = useState(false);
-  const [textareaHeight, setTextareaHeight] = useState("auto");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  const [inputMode, setInputMode] = useState<"manual" | "link">("manual");
+  const [jobLink, setJobLink] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [userExperience, setUserExperience] = useState("");
+  const [userName, setUserName] = useState("");
+  const [skills, setSkills] = useState("");
+  const [education, setEducation] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [generationType, setGenerationType] = useState<
+    "resume" | "cover-letter" | "both"
+  >("both");
 
-  useEffect(() => {
-    // Apply theme class on mount and when theme changes
+  const [isLoading, setIsLoading] = useState(false);
+  const [isParsingLink, setIsParsingLink] = useState(false);
+  const [resume, setResume] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [copiedResume, setCopiedResume] = useState(false);
+  const [copiedCover, setCopiedCover] = useState(false);
+
+  useState(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
     } else {
       document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
     }
-
-    // Save theme preference to localStorage
     localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  // Scroll to bottom on mount
-  useEffect(() => {
-    scrollToBottom();
-  }, [scrollToBottom]);
+  });
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("theme", newTheme);
   };
 
-  const agent = useAgent({
-    agent: "chat"
-  });
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const [agentInput, setAgentInput] = useState("");
-  const handleAgentInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setAgentInput(e.target.value);
-  };
+    const fileName = file.name.toLowerCase();
+    if (
+      !fileName.endsWith(".pdf") &&
+      !fileName.endsWith(".txt")
+    ) {
+      alert("Please upload a PDF or TXT file. DOCX support coming soon!");
+      return;
+    }
 
-  const handleAgentSubmit = async (
-    e: React.FormEvent,
-    extraData: Record<string, unknown> = {}
-  ) => {
-    e.preventDefault();
-    if (!agentInput.trim()) return;
+    setResumeFile(file);
+    setIsLoading(true);
 
-    const message = agentInput;
-    setAgentInput("");
+    try {
+      let extractedText = '';
 
-    // Send message to agent
-    await sendMessage(
-      {
-        role: "user",
-        parts: [{ type: "text", text: message }]
-      },
-      {
-        body: extraData
+      if (fileName.endsWith('.txt')) {
+        // Simple text file - just read it
+        extractedText = await file.text();
+      } else if (fileName.endsWith('.pdf')) {
+        // Parse PDF in browser using pdfjs-dist
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Use bundled worker from node_modules
+        const workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).toString();
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        const textParts: string[] = [];
+
+        // Extract text from all pages
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str || '')
+            .join(' ');
+          if (pageText.trim()) {
+            textParts.push(pageText);
+          }
+        }
+
+        extractedText = textParts.join('\n').trim();
+
+        if (!extractedText || extractedText.length < 50) {
+          alert("Could not extract text from PDF. The PDF might be scanned or image-based. Please try uploading a TXT file.");
+          setResumeFile(null);
+          setIsLoading(false);
+          return;
+        }
       }
-    );
+
+      console.log(`Extracted ${extractedText.length} characters from file`);
+
+      // Send extracted text to backend for AI parsing
+      const response = await fetch("/parse-resume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text: extractedText })
+      });
+
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: {
+          name?: string;
+          experience?: string;
+          skills?: string;
+          education?: string;
+        };
+        error?: string;
+      };
+
+      if (result.success && result.data) {
+        if (result.data.name) setUserName(result.data.name);
+        if (result.data.experience) setUserExperience(result.data.experience);
+        if (result.data.skills) setSkills(result.data.skills);
+        if (result.data.education) setEducation(result.data.education);
+        alert("Resume parsed successfully! Please review and edit the auto-filled information.");
+      } else {
+        alert(`Error: ${result.error || "Failed to parse resume"}`);
+        setResumeFile(null);
+      }
+    } catch (error) {
+      console.error("Error parsing resume:", error);
+      alert("Failed to parse resume. Please try again or enter information manually.");
+      setResumeFile(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const {
-    messages: agentMessages,
-    addToolResult,
-    clearHistory,
-    status,
-    sendMessage,
-    stop
-  } = useAgentChat<unknown, UIMessage<{ createdAt: string }>>({
-    agent
-  });
+  const handleParseJobLink = async () => {
+    if (!jobLink.trim()) {
+      alert("Please enter a job link");
+      return;
+    }
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    agentMessages.length > 0 && scrollToBottom();
-  }, [agentMessages, scrollToBottom]);
+    setIsParsingLink(true);
+    try {
+      const response = await fetch("/parse-job-link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url: jobLink })
+      });
 
-  const pendingToolCallConfirmation = agentMessages.some((m: UIMessage) =>
-    m.parts?.some(
-      (part) =>
-        isToolUIPart(part) &&
-        part.state === "input-available" &&
-        // Manual check inside the component
-        toolsRequiringConfirmation.includes(
-          part.type.replace("tool-", "") as keyof typeof tools
-        )
-    )
-  );
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: {
+          description?: string;
+        };
+        error?: string;
+      };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      if (result.success && result.data) {
+        setJobDescription(result.data.description || "");
+      } else {
+        alert(`Error: ${result.error || "Could not parse job link"}`);
+      }
+    } catch (error) {
+      alert(`Error: ${error}`);
+    } finally {
+      setIsParsingLink(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!jobDescription.trim() || !userExperience.trim()) {
+      alert("Please fill in both Job Description and Your Experience");
+      return;
+    }
+
+    setIsLoading(true);
+    setResume("");
+    setCoverLetter("");
+    setKeywords([]);
+    setSuggestions([]);
+
+    try {
+      const response = await fetch("/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          jobDescription,
+          userExperience,
+          userName: userName || undefined,
+          skills: skills || undefined,
+          education: education || undefined,
+          type: generationType
+        })
+      });
+
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: {
+          resume?: string;
+          coverLetter?: string;
+          keywords?: string[];
+          suggestions?: string[];
+        };
+        error?: string;
+      };
+
+      if (result.success && result.data) {
+        if (result.data.resume) setResume(result.data.resume);
+        if (result.data.coverLetter) setCoverLetter(result.data.coverLetter);
+        if (result.data.keywords) setKeywords(result.data.keywords);
+        if (result.data.suggestions) setSuggestions(result.data.suggestions);
+      } else {
+        alert(`Error: ${result.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      alert(`Error: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string, type: "resume" | "cover") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === "resume") {
+        setCopiedResume(true);
+        setTimeout(() => setCopiedResume(false), 2000);
+      } else {
+        setCopiedCover(true);
+        setTimeout(() => setCopiedCover(false), 2000);
+      }
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const downloadPDF = async (type: "resume" | "cover-letter") => {
+    try {
+      const content = type === "resume" ? resume : coverLetter;
+      const response = await fetch("/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ content, type })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${type}-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Failed to download PDF:", error);
+      alert("Failed to download PDF");
+    }
   };
 
   return (
-    <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
-      <HasOpenAIKey />
-      <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-lg flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800">
-        <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center gap-3 sticky top-0 z-10">
-          <div className="flex items-center justify-center h-8 w-8">
-            <svg
-              width="28px"
-              height="28px"
-              className="text-[#F48120]"
-              data-icon="agents"
-            >
-              <title>Cloudflare Agents</title>
-              <symbol id="ai:local:agents" viewBox="0 0 80 79">
-                <path
-                  fill="currentColor"
-                  d="M69.3 39.7c-3.1 0-5.8 2.1-6.7 5H48.3V34h4.6l4.5-2.5c1.1.8 2.5 1.2 3.9 1.2 3.8 0 7-3.1 7-7s-3.1-7-7-7-7 3.1-7 7c0 .9.2 1.8.5 2.6L51.9 30h-3.5V18.8h-.1c-1.3-1-2.9-1.6-4.5-1.9h-.2c-1.9-.3-3.9-.1-5.8.6-.4.1-.8.3-1.2.5h-.1c-.1.1-.2.1-.3.2-1.7 1-3 2.4-4 4 0 .1-.1.2-.1.2l-.3.6c0 .1-.1.1-.1.2v.1h-.6c-2.9 0-5.7 1.2-7.7 3.2-2.1 2-3.2 4.8-3.2 7.7 0 .7.1 1.4.2 2.1-1.3.9-2.4 2.1-3.2 3.5s-1.2 2.9-1.4 4.5c-.1 1.6.1 3.2.7 4.7s1.5 2.9 2.6 4c-.8 1.8-1.2 3.7-1.1 5.6 0 1.9.5 3.8 1.4 5.6s2.1 3.2 3.6 4.4c1.3 1 2.7 1.7 4.3 2.2v-.1q2.25.75 4.8.6h.1c0 .1.1.1.1.1.9 1.7 2.3 3 4 4 .1.1.2.1.3.2h.1c.4.2.8.4 1.2.5 1.4.6 3 .8 4.5.7.4 0 .8-.1 1.3-.1h.1c1.6-.3 3.1-.9 4.5-1.9V62.9h3.5l3.1 1.7c-.3.8-.5 1.7-.5 2.6 0 3.8 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7c-1.5 0-2.8.5-3.9 1.2l-4.6-2.5h-4.6V48.7h14.3c.9 2.9 3.5 5 6.7 5 3.8 0 7-3.1 7-7s-3.1-7-7-7m-7.9-16.9c1.6 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.4-3 3-3m0 41.4c1.6 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.4-3 3-3M44.3 72c-.4.2-.7.3-1.1.3-.2 0-.4.1-.5.1h-.2c-.9.1-1.7 0-2.6-.3-1-.3-1.9-.9-2.7-1.7-.7-.8-1.3-1.7-1.6-2.7l-.3-1.5v-.7q0-.75.3-1.5c.1-.2.1-.4.2-.7s.3-.6.5-.9c0-.1.1-.1.1-.2.1-.1.1-.2.2-.3s.1-.2.2-.3c0 0 0-.1.1-.1l.6-.6-2.7-3.5c-1.3 1.1-2.3 2.4-2.9 3.9-.2.4-.4.9-.5 1.3v.1c-.1.2-.1.4-.1.6-.3 1.1-.4 2.3-.3 3.4-.3 0-.7 0-1-.1-2.2-.4-4.2-1.5-5.5-3.2-1.4-1.7-2-3.9-1.8-6.1q.15-1.2.6-2.4l.3-.6c.1-.2.2-.4.3-.5 0 0 0-.1.1-.1.4-.7.9-1.3 1.5-1.9 1.6-1.5 3.8-2.3 6-2.3q1.05 0 2.1.3v-4.5c-.7-.1-1.4-.2-2.1-.2-1.8 0-3.5.4-5.2 1.1-.7.3-1.3.6-1.9 1s-1.1.8-1.7 1.3c-.3.2-.5.5-.8.8-.6-.8-1-1.6-1.3-2.6-.2-1-.2-2 0-2.9.2-1 .6-1.9 1.3-2.6.6-.8 1.4-1.4 2.3-1.8l1.8-.9-.7-1.9c-.4-1-.5-2.1-.4-3.1s.5-2.1 1.1-2.9q.9-1.35 2.4-2.1c.9-.5 2-.8 3-.7.5 0 1 .1 1.5.2 1 .2 1.8.7 2.6 1.3s1.4 1.4 1.8 2.3l4.1-1.5c-.9-2-2.3-3.7-4.2-4.9q-.6-.3-.9-.6c.4-.7 1-1.4 1.6-1.9.8-.7 1.8-1.1 2.9-1.3.9-.2 1.7-.1 2.6 0 .4.1.7.2 1.1.3V72zm25-22.3c-1.6 0-3-1.3-3-3 0-1.6 1.3-3 3-3s3 1.3 3 3c0 1.6-1.3 3-3 3"
-                />
-              </symbol>
-              <use href="#ai:local:agents" />
-            </svg>
+    <div className="min-h-screen w-full p-4 bg-fixed">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#F48120]/10 text-[#F48120] rounded-full p-3">
+              <FileText size={32} weight="duotone" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">
+                Resume & Cover Letter Generator
+              </h1>
+              <p className="text-muted-foreground">
+                AI-powered, ATS-optimized, tailored to your dream job
+              </p>
+            </div>
           </div>
-
-          <div className="flex-1">
-            <h2 className="font-semibold text-base">AI Chat Agent</h2>
-          </div>
-
-          <div className="flex items-center gap-2 mr-2">
-            <Bug size={16} />
-            <Toggle
-              toggled={showDebug}
-              aria-label="Toggle debug mode"
-              onClick={() => setShowDebug((prev) => !prev)}
-            />
-          </div>
-
           <Button
             variant="ghost"
             size="md"
             shape="square"
-            className="rounded-full h-9 w-9"
+            className="rounded-full h-10 w-10"
             onClick={toggleTheme}
           >
             {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
           </Button>
-
-          <Button
-            variant="ghost"
-            size="md"
-            shape="square"
-            className="rounded-full h-9 w-9"
-            onClick={clearHistory}
-          >
-            <Trash size={20} />
-          </Button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 max-h-[calc(100vh-10rem)]">
-          {agentMessages.length === 0 && (
-            <div className="h-full flex items-center justify-center">
-              <Card className="p-6 max-w-md mx-auto bg-neutral-100 dark:bg-neutral-900">
-                <div className="text-center space-y-4">
-                  <div className="bg-[#F48120]/10 text-[#F48120] rounded-full p-3 inline-flex">
-                    <Robot size={24} />
-                  </div>
-                  <h3 className="font-semibold text-lg">Welcome to AI Chat</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Start a conversation with your AI assistant. Try asking
-                    about:
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Sparkle size={20} className="text-[#F48120]" />
+                Job & Experience Details
+              </h2>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  What do you need?
+                </label>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant={generationType === "resume" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setGenerationType("resume")}
+                  >
+                    Resume Only
+                  </Button>
+                  <Button
+                    variant={
+                      generationType === "cover-letter" ? "primary" : "ghost"
+                    }
+                    size="sm"
+                    onClick={() => setGenerationType("cover-letter")}
+                  >
+                    Cover Letter Only
+                  </Button>
+                  <Button
+                    variant={generationType === "both" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setGenerationType("both")}
+                  >
+                    Both
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  Upload Your Resume (Optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 cursor-pointer">
+                    <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-md p-4 text-center hover:border-[#F48120] transition-colors">
+                      <Upload
+                        size={24}
+                        className="mx-auto mb-2 text-muted-foreground"
+                      />
+                        <p className="text-sm text-muted-foreground">
+                          {resumeFile
+                            ? resumeFile.name
+                            : "Click to upload PDF or TXT"}
+                        </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,.txt"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      disabled={isLoading}
+                    />
+                  </label>
+                </div>
+                {resumeFile && (
+                  <p className="text-xs text-[#F48120] mt-2">
+                    ✓ Resume uploaded - fields auto-filled below
                   </p>
-                  <ul className="text-sm text-left space-y-2">
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Weather information for any city</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Local time in different locations</span>
-                    </li>
-                  </ul>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  Input Method
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={inputMode === "manual" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setInputMode("manual")}
+                  >
+                    Manual Entry
+                  </Button>
+                  <Button
+                    variant={inputMode === "link" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setInputMode("link")}
+                  >
+                    Job Link
+                  </Button>
+                </div>
+              </div>
+
+              {inputMode === "link" ? (
+                <div className="mb-4">
+                  <label
+                    htmlFor="job-link"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Job Posting URL *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="job-link"
+                      type="url"
+                      placeholder="https://example.com/job-posting"
+                      className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-transparent"
+                      value={jobLink}
+                      onChange={(e) => setJobLink(e.target.value)}
+                    />
+                    <Button
+                      onClick={handleParseJobLink}
+                      disabled={isParsingLink || !jobLink.trim()}
+                      size="sm"
+                    >
+                      {isParsingLink ? (
+                        <>
+                          <Sparkle className="animate-spin mr-2" size={16} />
+                          Parsing...
+                        </>
+                      ) : (
+                        <>
+                          <LinkIcon className="mr-2" size={16} />
+                          Parse
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {jobDescription && (
+                    <p className="text-xs text-[#F48120] mt-2">
+                      ✓ Job description parsed successfully
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label
+                    htmlFor="job-description"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Job Description *
+                  </label>
+                  <Textarea
+                    id="job-description"
+                    placeholder="Paste the full job description here..."
+                    className="mt-2 min-h-[150px]"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label
+                  htmlFor="user-experience"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Your Experience *
+                </label>
+                <Textarea
+                  id="user-experience"
+                  placeholder="Describe your relevant work experience, projects, and achievements..."
+                  className="mt-2 min-h-[150px]"
+                  value={userExperience}
+                  onChange={(e) => setUserExperience(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Your Name (optional)
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-transparent"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="skills"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Skills (optional)
+                  </label>
+                  <input
+                    id="skills"
+                    type="text"
+                    placeholder="JavaScript, React, Node.js, etc."
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-transparent"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="education"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Education (optional)
+                  </label>
+                  <input
+                    id="education"
+                    type="text"
+                    placeholder="BS in Computer Science, MIT"
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-transparent"
+                    value={education}
+                    onChange={(e) => setEducation(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Button
+                className="w-full mt-6"
+                onClick={handleGenerate}
+                disabled={
+                  isLoading || !jobDescription.trim() || !userExperience.trim()
+                }
+              >
+                {isLoading ? (
+                  <>
+                    <Sparkle className="animate-spin mr-2" size={16} />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkle className="mr-2" size={16} />
+                    Generate{" "}
+                    {generationType === "both"
+                      ? "Resume & Cover Letter"
+                      : generationType === "resume"
+                        ? "Resume"
+                        : "Cover Letter"}
+                  </>
+                )}
+              </Button>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            {resume && (
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Your Resume</h2>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(resume, "resume")}
+                    >
+                      {copiedResume ? (
+                        <Check size={16} className="mr-2" />
+                      ) : (
+                        <Copy size={16} className="mr-2" />
+                      )}
+                      {copiedResume ? "Copied!" : "Copy"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => downloadPDF("resume")}
+                    >
+                      <Download size={16} className="mr-2" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+                <div className="prose dark:prose-invert max-w-none">
+                  <MemoizedMarkdown id="resume" content={resume} />
                 </div>
               </Card>
-            </div>
-          )}
+            )}
 
-          {agentMessages.map((m, index) => {
-            const isUser = m.role === "user";
-            const showAvatar =
-              index === 0 || agentMessages[index - 1]?.role !== m.role;
-
-            return (
-              <div key={m.id}>
-                {showDebug && (
-                  <pre className="text-xs text-muted-foreground overflow-scroll">
-                    {JSON.stringify(m, null, 2)}
-                  </pre>
-                )}
-                <div
-                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`flex gap-2 max-w-[85%] ${
-                      isUser ? "flex-row-reverse" : "flex-row"
-                    }`}
-                  >
-                    {showAvatar && !isUser ? (
-                      <Avatar username={"AI"} />
-                    ) : (
-                      !isUser && <div className="w-8" />
-                    )}
-
-                    <div>
-                      <div>
-                        {m.parts?.map((part, i) => {
-                          if (part.type === "text") {
-                            return (
-                              // biome-ignore lint/suspicious/noArrayIndexKey: immutable index
-                              <div key={i}>
-                                <Card
-                                  className={`p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 ${
-                                    isUser
-                                      ? "rounded-br-none"
-                                      : "rounded-bl-none border-assistant-border"
-                                  } ${
-                                    part.text.startsWith("scheduled message")
-                                      ? "border-accent/50"
-                                      : ""
-                                  } relative`}
-                                >
-                                  {part.text.startsWith(
-                                    "scheduled message"
-                                  ) && (
-                                    <span className="absolute -top-3 -left-2 text-base">
-                                      🕒
-                                    </span>
-                                  )}
-                                  <MemoizedMarkdown
-                                    id={`${m.id}-${i}`}
-                                    content={part.text.replace(
-                                      /^scheduled message: /,
-                                      ""
-                                    )}
-                                  />
-                                </Card>
-                                <p
-                                  className={`text-xs text-muted-foreground mt-1 ${
-                                    isUser ? "text-right" : "text-left"
-                                  }`}
-                                >
-                                  {formatTime(
-                                    m.metadata?.createdAt
-                                      ? new Date(m.metadata.createdAt)
-                                      : new Date()
-                                  )}
-                                </p>
-                              </div>
-                            );
-                          }
-
-                          if (
-                            isToolUIPart(part) &&
-                            m.id.startsWith("assistant")
-                          ) {
-                            const toolCallId = part.toolCallId;
-                            const toolName = part.type.replace("tool-", "");
-                            const needsConfirmation =
-                              toolsRequiringConfirmation.includes(
-                                toolName as keyof typeof tools
-                              );
-
-                            // Skip rendering the card in debug mode
-                            if (showDebug) return null;
-
-                            return (
-                              <ToolInvocationCard
-                                // biome-ignore lint/suspicious/noArrayIndexKey: using index is safe here as the array is static
-                                key={`${toolCallId}-${i}`}
-                                toolUIPart={part}
-                                toolCallId={toolCallId}
-                                needsConfirmation={needsConfirmation}
-                                onSubmit={({ toolCallId, result }) => {
-                                  addToolResult({
-                                    tool: part.type.replace("tool-", ""),
-                                    toolCallId,
-                                    output: result
-                                  });
-                                }}
-                                addToolResult={(toolCallId, result) => {
-                                  addToolResult({
-                                    tool: part.type.replace("tool-", ""),
-                                    toolCallId,
-                                    output: result
-                                  });
-                                }}
-                              />
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-                    </div>
+            {coverLetter && (
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Your Cover Letter</h2>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(coverLetter, "cover")}
+                    >
+                      {copiedCover ? (
+                        <Check size={16} className="mr-2" />
+                      ) : (
+                        <Copy size={16} className="mr-2" />
+                      )}
+                      {copiedCover ? "Copied!" : "Copy"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => downloadPDF("cover-letter")}
+                    >
+                      <Download size={16} className="mr-2" />
+                      PDF
+                    </Button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
+                <div className="prose dark:prose-invert max-w-none">
+                  <MemoizedMarkdown id="cover-letter" content={coverLetter} />
+                </div>
+              </Card>
+            )}
 
-        {/* Input Area */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAgentSubmit(e, {
-              annotations: {
-                hello: "world"
-              }
-            });
-            setTextareaHeight("auto"); // Reset height after submission
-          }}
-          className="p-3 bg-neutral-50 absolute bottom-0 left-0 right-0 z-10 border-t border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900"
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Textarea
-                disabled={pendingToolCallConfirmation}
-                placeholder={
-                  pendingToolCallConfirmation
-                    ? "Please respond to the tool confirmation above..."
-                    : "Send a message..."
-                }
-                className="flex w-full border border-neutral-200 dark:border-neutral-700 px-3 py-2  ring-offset-background placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base pb-10 dark:bg-neutral-900"
-                value={agentInput}
-                onChange={(e) => {
-                  handleAgentInputChange(e);
-                  // Auto-resize the textarea
-                  e.target.style.height = "auto";
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                  setTextareaHeight(`${e.target.scrollHeight}px`);
-                }}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !e.nativeEvent.isComposing
-                  ) {
-                    e.preventDefault();
-                    handleAgentSubmit(e as unknown as React.FormEvent);
-                    setTextareaHeight("auto"); // Reset height on Enter submission
-                  }
-                }}
-                rows={2}
-                style={{ height: textareaHeight }}
-              />
-              <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-                {status === "submitted" || status === "streaming" ? (
-                  <button
-                    type="button"
-                    onClick={stop}
-                    className="inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full p-1.5 h-fit border border-neutral-200 dark:border-neutral-800"
-                    aria-label="Stop generation"
-                  >
-                    <Stop size={16} />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full p-1.5 h-fit border border-neutral-200 dark:border-neutral-800"
-                    disabled={pendingToolCallConfirmation || !agentInput.trim()}
-                    aria-label="Send message"
-                  >
-                    <PaperPlaneTilt size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
+            {keywords.length > 0 && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-3">🔑 ATS Keywords</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Make sure these keywords appear in your resume:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {keywords.map((keyword, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-[#F48120]/10 text-[#F48120] rounded-full text-sm"
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {suggestions.length > 0 && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-3">💡 Suggestions</h3>
+                <ul className="space-y-2">
+                  {suggestions.map((suggestion, index) => (
+                    <li key={index} className="text-sm flex items-start gap-2">
+                      <span className="text-[#F48120] mt-1">•</span>
+                      <span>{suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
+            {!resume && !coverLetter && !isLoading && (
+              <Card className="p-12 text-center">
+                <FileText
+                  size={64}
+                  className="mx-auto mb-4 text-muted-foreground"
+                  weight="duotone"
+                />
+                <h3 className="text-xl font-semibold mb-2">
+                  Ready to Create Your Resume?
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Upload your resume or paste job details, then click Generate!
+                </p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>✨ AI-powered content generation</p>
+                  <p>📊 ATS-optimized formatting</p>
+                  <p>🎯 Tailored to job requirements</p>
+                  <p>⚡ Generated in seconds</p>
+                  <p>📄 Download as PDF</p>
+                </div>
+              </Card>
+            )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
-}
-
-const hasOpenAiKeyPromise = fetch("/check-open-ai-key").then((res) =>
-  res.json<{ success: boolean }>()
-);
-
-function HasOpenAIKey() {
-  const hasOpenAiKey = use(hasOpenAiKeyPromise);
-
-  if (!hasOpenAiKey.success) {
-    return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-red-500/10 backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-lg border border-red-200 dark:border-red-900 p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-                <svg
-                  className="w-5 h-5 text-red-600 dark:text-red-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-labelledby="warningIcon"
-                >
-                  <title id="warningIcon">Warning Icon</title>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
-                  OpenAI API Key Not Configured
-                </h3>
-                <p className="text-neutral-600 dark:text-neutral-300 mb-1">
-                  Requests to the API, including from the frontend UI, will not
-                  work until an OpenAI API key is configured.
-                </p>
-                <p className="text-neutral-600 dark:text-neutral-300">
-                  Please configure an OpenAI API key by setting a{" "}
-                  <a
-                    href="https://developers.cloudflare.com/workers/configuration/secrets/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-red-600 dark:text-red-400"
-                  >
-                    secret
-                  </a>{" "}
-                  named{" "}
-                  <code className="bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 font-mono text-sm">
-                    OPENAI_API_KEY
-                  </code>
-                  . <br />
-                  You can also use a different model provider by following these{" "}
-                  <a
-                    href="https://github.com/cloudflare/agents-starter?tab=readme-ov-file#use-a-different-ai-model-provider"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-red-600 dark:text-red-400"
-                  >
-                    instructions.
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
 }

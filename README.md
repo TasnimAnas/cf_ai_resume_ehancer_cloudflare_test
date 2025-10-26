@@ -1,238 +1,525 @@
-# 🤖 Chat Agent Starter Kit
+# 📝 AI Resume & Cover Letter Generator
 
-![npm i agents command](./npm-agents-banner.svg)
+An intelligent resume and cover letter generator powered by Cloudflare Workers AI that creates **ATS-optimized, job-tailored documents** in seconds.
 
-<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/agents-starter"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare"/></a>
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
+![React](https://img.shields.io/badge/React-19.2-61dafb)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange)
 
-A starter template for building AI-powered chat agents using Cloudflare's Agent platform, powered by [`agents`](https://www.npmjs.com/package/agents). This project provides a foundation for creating interactive chat experiences with AI, complete with a modern UI and tool integration capabilities.
+## 🌟 Features
 
-## Features
+### Core Functionality
 
-- 💬 Interactive chat interface with AI
-- 🛠️ Built-in tool system with human-in-the-loop confirmation
-- 📅 Advanced task scheduling (one-time, delayed, and recurring via cron)
-- 🌓 Dark/Light theme support
-- ⚡️ Real-time streaming responses
-- 🔄 State management and chat history
-- 🎨 Modern, responsive UI
+- 🤖 **AI-Powered Generation** - Uses Cloudflare Workers AI (Llama 3.1 8B)
+- 📄 **Resume Generation** - Professional, ATS-optimized bullet points with action verbs
+- 💌 **Cover Letter Writing** - Compelling, personalized cover letters
+- 📤 **Resume Upload** - Upload existing resume (PDF/TXT) to auto-fill fields
+- 🔗 **Job Link Parsing** - Paste job posting URL to extract description automatically
+- 📥 **PDF Export** - Download resume and cover letter as professional PDFs
+- 🔑 **Keyword Extraction** - Identifies important ATS keywords from job description
+- 💡 **Smart Suggestions** - Get actionable tips to improve your application
 
-## Prerequisites
+### User Experience
 
-- Cloudflare account
-- OpenAI API key
+- ⚡ **Lightning Fast** - Generate documents in 5-10 seconds
+- 🎯 **Job-Tailored** - Matches your experience to specific job requirements
+- 📋 **Copy to Clipboard** - Easy copying for online applications
+- 🌓 **Dark/Light Mode** - Comfortable viewing in any environment
+- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 
-## Quick Start
+## 🚀 Quick Start
 
-1. Create a new project:
+### Prerequisites
+
+- Node.js 18+ and npm
+- Cloudflare account (for deployment)
+
+### Installation
 
 ```bash
-npx create-cloudflare@latest --template cloudflare/agents-starter
-```
+# Clone the repository
+git clone https://github.com/TasnimAnas/cf_ai_resume_ehancer_cloudflare_test
+cd cf_ai_resume_ehancer_cloudflare_test
 
-2. Install dependencies:
-
-```bash
+# Install main app dependencies
 npm install
+
+# Install AI Worker dependencies
+cd AI-Worker
+npm install
+cd ..
 ```
 
-3. Set up your environment:
+### Running Locally
 
-Create a `.dev.vars` file:
+You need to run **two servers** in separate terminal windows:
 
-```env
-OPENAI_API_KEY=your_openai_api_key
+**Terminal 1: AI Worker (Port 8787)**
+
+```bash
+cd AI-Worker
+npm run dev
 ```
 
-4. Run locally:
+**Terminal 2: Main Application (Port 5173)**
 
 ```bash
 npm start
 ```
 
-5. Deploy:
+### Access the Application
+
+Open your browser and navigate to: **http://localhost:5173**
+
+### Test Resume
+
+A sample resume file (`test_resume.pdf`) is included in the project root for testing purposes. You can use this file to test the resume upload feature, or upload your own resume in PDF or TXT format.
+
+## 📖 How to Use
+
+### Option 1: Quick Start with Resume Upload
+
+1. **Upload Your Resume**
+   - Click "Upload Your Resume"
+   - Select PDF or TXT file
+   - System automatically extracts your information
+   - Review and edit auto-filled fields
+
+2. **Add Job Details**
+   - Choose "Job Link" mode
+   - Paste the job posting URL
+   - Click "Parse" to extract description
+   - OR manually paste job description
+
+3. **Generate Documents**
+   - Select what you need (Resume, Cover Letter, or Both)
+   - Click "Generate"
+   - Wait 5-10 seconds
+
+4. **Download & Use**
+   - Review generated documents
+   - Click "PDF" to download
+   - Copy text for online applications
+
+### Option 2: Manual Entry
+
+1. **Choose Document Type**
+   - Resume Only
+   - Cover Letter Only
+   - Both (Recommended)
+
+2. **Enter Job Information**
+   - Paste full job description
+   - Include requirements and responsibilities
+
+3. **Enter Your Information**
+   - Work experience (Required)
+   - Skills (Optional)
+   - Education (Optional)
+   - Name (Optional - for cover letter)
+
+4. **Generate & Download**
+   - Click "Generate"
+   - Review results
+   - Download as PDF or copy text
+
+## 🎯 What You Get
+
+### Professional Resume
+
+- **Professional Summary** - 2-3 sentences highlighting relevant experience
+- **Key Skills** - Matched to job requirements
+- **Work Experience** - Powerful bullet points with action verbs and metrics
+- **Education** - Professionally formatted
+- **ATS-Optimized** - Passes applicant tracking systems
+
+### Compelling Cover Letter
+
+- **Engaging Opening** - Shows enthusiasm for the role
+- **Key Achievements** - 2-3 relevant accomplishments
+- **Company Understanding** - Demonstrates research
+- **Strong Closing** - Clear call to action
+- **Professional Tone** - Personable yet formal
+
+### Additional Features
+
+- **Top 15 ATS Keywords** - From job description
+- **3-5 Improvement Suggestions** - Actionable tips
+- **Copy to Clipboard** - One-click copying
+- **PDF Export** - Professional formatting
+
+## 💡 Tips for Best Results
+
+### Resume Upload
+
+✅ Use TXT format for best compatibility  
+✅ PDF works if text-based (not scanned)  
+✅ Ensure text is selectable in PDF  
+❌ Scanned/image PDFs won't work  
+💡 If PDF fails, save as TXT and try again
+
+### Job Link
+
+✅ Use direct job posting URLs  
+✅ Works with LinkedIn, Indeed, company sites  
+✅ Ensure page is publicly accessible  
+❌ Login-required pages won't work
+
+### Manual Entry
+
+✅ Include full job description  
+✅ Keep company name and role title  
+✅ Include all requirements  
+✅ Be specific about achievements  
+✅ Include numbers and metrics
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+**Frontend**
+
+- React 19 + TypeScript
+- Tailwind CSS for styling
+- Vite for building
+- pdfjs-dist for PDF parsing
+- pdf-lib for PDF generation
+
+**Backend**
+
+- Cloudflare Workers (serverless)
+- Cloudflare Workers AI (Llama 3.1 8B)
+- TypeScript
+
+**Development**
+
+- Vitest for testing
+- Biome for linting
+- Prettier for formatting
+
+### Project Structure
+
+```
+agents-starter/
+├── src/
+│   ├── app.tsx              # Main React application
+│   ├── client.tsx           # React DOM entry point
+│   ├── server.ts            # Cloudflare Worker backend
+│   ├── components/          # UI components
+│   │   ├── button/
+│   │   ├── card/
+│   │   ├── textarea/
+│   │   └── ...
+│   └── styles.css           # Global styles
+├── AI-Worker/
+│   └── src/
+│       └── index.js         # AI inference worker
+├── tests/
+│   └── index.test.ts        # Backend tests
+├── public/                  # Static assets
+├── package.json             # Dependencies
+├── vite.config.ts           # Vite configuration
+├── wrangler.jsonc           # Cloudflare config
+└── README.md                # This file
+```
+
+## 🧪 Testing
+
+Run all tests:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm test -- --watch
+```
+
+Run tests with coverage:
+
+```bash
+npm test -- --coverage
+```
+
+## 🚀 Deployment
+
+### Deploy AI Worker
+
+```bash
+cd AI-Worker
+npm run deploy
+```
+
+Note the deployed URL (e.g., `https://resume-ai-worker.your-subdomain.workers.dev`)
+
+### Update Main App Configuration
+
+Edit `src/server.ts` and update the AI Worker URL:
+
+```typescript
+// Change all instances of:
+const response = await fetch("http://localhost:8787", {
+  // to:
+const response = await fetch("https://resume-ai-worker.your-subdomain.workers.dev", {
+```
+
+### Deploy Main App
 
 ```bash
 npm run deploy
 ```
 
-## Project Structure
+Your app will be live at: `https://resume-generator.your-subdomain.workers.dev`
 
+## 📊 API Endpoints
+
+### POST /generate
+
+Generate resume and/or cover letter.
+
+**Request:**
+
+```json
+{
+  "jobDescription": "string (required)",
+  "userExperience": "string (required)",
+  "userName": "string (optional)",
+  "skills": "string (optional)",
+  "education": "string (optional)",
+  "type": "resume | cover-letter | both"
+}
 ```
-├── src/
-│   ├── app.tsx        # Chat UI implementation
-│   ├── server.ts      # Chat agent logic
-│   ├── tools.ts       # Tool definitions
-│   ├── utils.ts       # Helper functions
-│   └── styles.css     # UI styling
-```
 
-## Customization Guide
+**Response:**
 
-### Adding New Tools
-
-Add new tools in `tools.ts` using the tool builder:
-
-```ts
-// Example of a tool that requires confirmation
-const searchDatabase = tool({
-  description: "Search the database for user records",
-  parameters: z.object({
-    query: z.string(),
-    limit: z.number().optional()
-  })
-  // No execute function = requires confirmation
-});
-
-// Example of an auto-executing tool
-const getCurrentTime = tool({
-  description: "Get current server time",
-  parameters: z.object({}),
-  execute: async () => new Date().toISOString()
-});
-
-// Scheduling tool implementation
-const scheduleTask = tool({
-  description:
-    "schedule a task to be executed at a later time. 'when' can be a date, a delay in seconds, or a cron pattern.",
-  parameters: z.object({
-    type: z.enum(["scheduled", "delayed", "cron"]),
-    when: z.union([z.number(), z.string()]),
-    payload: z.string()
-  }),
-  execute: async ({ type, when, payload }) => {
-    // ... see the implementation in tools.ts
+```json
+{
+  "success": true,
+  "data": {
+    "resume": "string",
+    "coverLetter": "string",
+    "keywords": ["string"],
+    "suggestions": ["string"]
   }
+}
+```
+
+### POST /parse-resume
+
+Parse resume text and extract information.
+
+**Request:**
+
+```json
+{
+  "text": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "name": "string",
+    "experience": "string",
+    "skills": "string",
+    "education": "string"
+  }
+}
+```
+
+### POST /parse-job-link
+
+Parse job posting URL and extract description.
+
+**Request:**
+
+```json
+{
+  "url": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "description": "string",
+    "title": "string",
+    "company": "string"
+  }
+}
+```
+
+### POST /generate-pdf
+
+Generate PDF from markdown content.
+
+**Request:**
+
+```json
+{
+  "content": "string (required)",
+  "type": "resume | cover-letter"
+}
+```
+
+**Response:** PDF file download
+
+### GET /health
+
+Health check endpoint.
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "message": "Resume Generator Service is running",
+  "features": ["array of features"]
+}
+```
+
+## 🔧 Configuration
+
+### Customize AI Model
+
+Edit `AI-Worker/src/index.js`:
+
+```javascript
+const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+  prompt: data.prompt,
+  max_tokens: 2048 // Adjust for longer/shorter responses
 });
 ```
 
-To handle tool confirmations, add execution functions to the `executions` object:
+Available models:
 
-```typescript
-export const executions = {
-  searchDatabase: async ({
-    query,
-    limit
-  }: {
-    query: string;
-    limit?: number;
-  }) => {
-    // Implementation for when the tool is confirmed
-    const results = await db.search(query, limit);
-    return results;
-  }
-  // Add more execution handlers for other tools that require confirmation
-};
+- `@cf/meta/llama-3.1-8b-instruct` (default, fast)
+- `@cf/meta/llama-3.1-70b-instruct` (more powerful, slower)
+
+### Customize Prompts
+
+Edit `src/server.ts` to modify generation prompts for resumes and cover letters.
+
+## 🐛 Troubleshooting
+
+### AI Worker Not Running
+
+```bash
+cd AI-Worker
+npm run dev
 ```
 
-Tools can be configured in two ways:
+Ensure it's running on port 8787
 
-1. With an `execute` function for automatic execution
-2. Without an `execute` function, requiring confirmation and using the `executions` object to handle the confirmed action. NOTE: The keys in `executions` should match `toolsRequiringConfirmation` in `app.tsx`.
+### Port Already in Use
 
-### Use a different AI model provider
+```bash
+# Kill process on port 5173
+lsof -ti:5173 | xargs kill -9
 
-The starting [`server.ts`](https://github.com/cloudflare/agents-starter/blob/main/src/server.ts) implementation uses the [`ai-sdk`](https://sdk.vercel.ai/docs/introduction) and the [OpenAI provider](https://sdk.vercel.ai/providers/ai-sdk-providers/openai), but you can use any AI model provider by:
-
-1. Installing an alternative AI provider for the `ai-sdk`, such as the [`workers-ai-provider`](https://sdk.vercel.ai/providers/community-providers/cloudflare-workers-ai) or [`anthropic`](https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic) provider:
-2. Replacing the AI SDK with the [OpenAI SDK](https://github.com/openai/openai-node)
-3. Using the Cloudflare [Workers AI + AI Gateway](https://developers.cloudflare.com/ai-gateway/providers/workersai/#workers-binding) binding API directly
-
-For example, to use the [`workers-ai-provider`](https://sdk.vercel.ai/providers/community-providers/cloudflare-workers-ai), install the package:
-
-```sh
-npm install workers-ai-provider
+# Kill process on port 8787
+lsof -ti:8787 | xargs kill -9
 ```
 
-Add an `ai` binding to `wrangler.jsonc`:
+### Resume Upload Not Working
 
-```jsonc
-// rest of file
-  "ai": {
-    "binding": "AI"
-  }
-// rest of file
-```
+- Ensure file is PDF or TXT
+- PDF must be text-based (not scanned)
+- Try saving as TXT if PDF fails
+- Check browser console for errors
 
-Replace the `@ai-sdk/openai` import and usage with the `workers-ai-provider`:
+### Job Link Parsing Fails
 
-```diff
-// server.ts
-// Change the imports
-- import { openai } from "@ai-sdk/openai";
-+ import { createWorkersAI } from 'workers-ai-provider';
+- Ensure URL is publicly accessible
+- Try copying description manually
+- Some sites block automated access
 
-// Create a Workers AI instance
-+ const workersai = createWorkersAI({ binding: env.AI });
+### PDF Generation Fails
 
-// Use it when calling the streamText method (or other methods)
-// from the ai-sdk
-- const model = openai("gpt-4o-2024-11-20");
-+ const model = workersai("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b")
-```
+- Check that content is valid markdown
+- Ensure pdf-lib is installed
+- Check browser console for errors
 
-Commit your changes and then run the `agents-starter` as per the rest of this README.
+## 🤝 Contributing
 
-### Modifying the UI
+Contributions are welcome! Here's how:
 
-The chat interface is built with React and can be customized in `app.tsx`:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests if applicable
+5. Run tests (`npm test`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-- Modify the theme colors in `styles.css`
-- Add new UI components in the chat container
-- Customize message rendering and tool confirmation dialogs
-- Add new controls to the header
+### Development Guidelines
 
-### Example Use Cases
+- Use TypeScript for type safety
+- Follow existing code style
+- Add comments for complex logic
+- Write tests for new features
+- Update documentation
 
-1. **Customer Support Agent**
-   - Add tools for:
-     - Ticket creation/lookup
-     - Order status checking
-     - Product recommendations
-     - FAQ database search
+## 📄 License
 
-2. **Development Assistant**
-   - Integrate tools for:
-     - Code linting
-     - Git operations
-     - Documentation search
-     - Dependency checking
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-3. **Data Analysis Assistant**
-   - Build tools for:
-     - Database querying
-     - Data visualization
-     - Statistical analysis
-     - Report generation
+## 🙏 Acknowledgments
 
-4. **Personal Productivity Assistant**
-   - Implement tools for:
-     - Task scheduling with flexible timing options
-     - One-time, delayed, and recurring task management
-     - Task tracking with reminders
-     - Email drafting
-     - Note taking
+- [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) for AI inference
+- [pdfjs-dist](https://github.com/mozilla/pdf.js) for PDF parsing
+- [pdf-lib](https://github.com/Hopding/pdf-lib) for PDF generation
+- [React](https://react.dev/) for the UI framework
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Vite](https://vitejs.dev/) for build tooling
 
-5. **Scheduling Assistant**
-   - Build tools for:
-     - One-time event scheduling using specific dates
-     - Delayed task execution (e.g., "remind me in 30 minutes")
-     - Recurring tasks using cron patterns
-     - Task payload management
-     - Flexible scheduling patterns
+## 📞 Support
 
-Each use case can be implemented by:
+For issues, questions, or suggestions:
 
-1. Adding relevant tools in `tools.ts`
-2. Customizing the UI for specific interactions
-3. Extending the agent's capabilities in `server.ts`
-4. Adding any necessary external API integrations
+1. Check the [Troubleshooting](#-troubleshooting) section
+2. Search existing [Issues](../../issues)
+3. Create a new issue with detailed information
 
-## Learn More
+## 🗺️ Roadmap
 
-- [`agents`](https://github.com/cloudflare/agents/blob/main/packages/agents/README.md)
-- [Cloudflare Agents Documentation](https://developers.cloudflare.com/agents/)
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- [ ] Multiple resume templates
+- [ ] DOCX file support
+- [ ] Save/load drafts
+- [ ] Resume scoring
+- [ ] Interview prep questions
+- [ ] LinkedIn profile optimization
+- [ ] Email follow-up templates
+- [ ] Browser extension
+- [ ] OCR for scanned PDFs
 
-## License
+## 📈 Performance
 
-MIT
+- Initial load: ~500ms
+- Resume generation: 5-10 seconds
+- PDF generation: 1-2 seconds
+- Resume parsing: 2-5 seconds
+
+## 🔒 Privacy & Security
+
+- No data stored permanently
+- All processing happens in real-time
+- Files parsed in browser (never uploaded until processed)
+- No third-party tracking
+- No user data logged
+
+---
+
+**Built with ❤️ to help job seekers land their dream jobs faster!**
+
+**Star ⭐ this repo if you find it helpful!**
