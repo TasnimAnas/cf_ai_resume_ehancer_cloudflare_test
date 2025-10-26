@@ -39,7 +39,7 @@ An intelligent resume and cover letter generator powered by Cloudflare Workers A
 
 ```bash
 # Clone the repository
-git clone https://github.com/TasnimAnas/cf_ai_resume_ehancer_cloudflare_test
+git clone https://github.com/TasnimAnas/cf_ai_resume_ehancer_cloudflare_test.git
 cd cf_ai_resume_ehancer_cloudflare_test
 
 # Install main app dependencies
