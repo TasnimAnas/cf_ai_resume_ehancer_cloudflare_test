@@ -7,6 +7,10 @@ An intelligent resume and cover letter generator powered by Cloudflare Workers A
 ![React](https://img.shields.io/badge/React-19.2-61dafb)
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange)
 
+## Link
+
+https://resume-generator.anasfarazi0151.workers.dev/
+
 ## 🌟 Features
 
 ### Core Functionality
