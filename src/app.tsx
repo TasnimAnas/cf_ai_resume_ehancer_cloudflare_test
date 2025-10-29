@@ -67,10 +67,7 @@ export default function ResumeGenerator() {
     if (!file) return;
 
     const fileName = file.name.toLowerCase();
-    if (
-      !fileName.endsWith(".pdf") &&
-      !fileName.endsWith(".txt")
-    ) {
+    if (!fileName.endsWith(".pdf") && !fileName.endsWith(".txt")) {
       alert("Please upload a PDF or TXT file. DOCX support coming soon!");
       return;
     }
@@ -79,18 +76,18 @@ export default function ResumeGenerator() {
     setIsLoading(true);
 
     try {
-      let extractedText = '';
+      let extractedText = "";
 
-      if (fileName.endsWith('.txt')) {
+      if (fileName.endsWith(".txt")) {
         // Simple text file - just read it
         extractedText = await file.text();
-      } else if (fileName.endsWith('.pdf')) {
+      } else if (fileName.endsWith(".pdf")) {
         // Parse PDF in browser using pdfjs-dist
-        const pdfjsLib = await import('pdfjs-dist');
-        
+        const pdfjsLib = await import("pdfjs-dist");
+
         // Use bundled worker from node_modules
         const workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
+          "pdfjs-dist/build/pdf.worker.min.mjs",
           import.meta.url
         ).toString();
         pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
@@ -106,17 +103,19 @@ export default function ResumeGenerator() {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           const pageText = textContent.items
-            .map((item: any) => item.str || '')
-            .join(' ');
+            .map((item: any) => item.str || "")
+            .join(" ");
           if (pageText.trim()) {
             textParts.push(pageText);
           }
         }
 
-        extractedText = textParts.join('\n').trim();
+        extractedText = textParts.join("\n").trim();
 
         if (!extractedText || extractedText.length < 50) {
-          alert("Could not extract text from PDF. The PDF might be scanned or image-based. Please try uploading a TXT file.");
+          alert(
+            "Could not extract text from PDF. The PDF might be scanned or image-based. Please try uploading a TXT file."
+          );
           setResumeFile(null);
           setIsLoading(false);
           return;
@@ -150,14 +149,18 @@ export default function ResumeGenerator() {
         if (result.data.experience) setUserExperience(result.data.experience);
         if (result.data.skills) setSkills(result.data.skills);
         if (result.data.education) setEducation(result.data.education);
-        alert("Resume parsed successfully! Please review and edit the auto-filled information.");
+        alert(
+          "Resume parsed successfully! Please review and edit the auto-filled information."
+        );
       } else {
         alert(`Error: ${result.error || "Failed to parse resume"}`);
         setResumeFile(null);
       }
     } catch (error) {
       console.error("Error parsing resume:", error);
-      alert("Failed to parse resume. Please try again or enter information manually.");
+      alert(
+        "Failed to parse resume. Please try again or enter information manually."
+      );
       setResumeFile(null);
     } finally {
       setIsLoading(false);
@@ -377,11 +380,11 @@ export default function ResumeGenerator() {
                         size={24}
                         className="mx-auto mb-2 text-muted-foreground"
                       />
-                        <p className="text-sm text-muted-foreground">
-                          {resumeFile
-                            ? resumeFile.name
-                            : "Click to upload PDF or TXT"}
-                        </p>
+                      <p className="text-sm text-muted-foreground">
+                        {resumeFile
+                          ? resumeFile.name
+                          : "Click to upload PDF or TXT"}
+                      </p>
                     </div>
                     <input
                       type="file"
