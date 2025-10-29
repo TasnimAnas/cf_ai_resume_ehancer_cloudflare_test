@@ -48,25 +48,11 @@ cd cf_ai_resume_ehancer_cloudflare_test
 
 # Install main app dependencies
 npm install
-
-# Install AI Worker dependencies
-cd AI-Worker
-npm install
-cd ..
 ```
 
 ### Running Locally
 
-You need to run **two servers** in separate terminal windows:
-
-**Terminal 1: AI Worker (Port 8787)**
-
-```bash
-cd AI-Worker
-npm run dev
-```
-
-**Terminal 2: Main Application (Port 5173)**
+**Terminal: Main Application (Port 5173)**
 
 ```bash
 npm start
@@ -216,9 +202,6 @@ agents-starter/
 │   │   ├── textarea/
 │   │   └── ...
 │   └── styles.css           # Global styles
-├── AI-Worker/
-│   └── src/
-│       └── index.js         # AI inference worker
 ├── tests/
 │   └── index.test.ts        # Backend tests
 ├── public/                  # Static assets
@@ -249,13 +232,6 @@ npm test -- --coverage
 ```
 
 ## 🚀 Deployment
-
-### Deploy AI Worker
-
-```bash
-cd AI-Worker
-npm run deploy
-```
 
 Note the deployed URL (e.g., `https://resume-ai-worker.your-subdomain.workers.dev`)
 
@@ -395,7 +371,7 @@ Health check endpoint.
 
 ### Customize AI Model
 
-Edit `AI-Worker/src/index.js`:
+Edit `/src/server.ts`:
 
 ```javascript
 const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
@@ -416,13 +392,6 @@ Edit `src/server.ts` to modify generation prompts for resumes and cover letters.
 ## 🐛 Troubleshooting
 
 ### AI Worker Not Running
-
-```bash
-cd AI-Worker
-npm run dev
-```
-
-Ensure it's running on port 8787
 
 ### Port Already in Use
 
